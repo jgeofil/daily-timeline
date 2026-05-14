@@ -16,7 +16,7 @@ const entryIds = timelineEntries.map((entry) => entry.id);
 
 const voiceSession: VoiceCaptureSession = {
   id: 'voice-session-1',
-  entryIds,
+  entryIds: [...entryIds],
   startedAt: new Date().toISOString(),
   endedAt: null,
   language: 'en-US',
@@ -25,7 +25,7 @@ const voiceSession: VoiceCaptureSession = {
 
 const insight: Insight = {
   id: 'insight-1',
-  entryIds,
+  entryIds: [...entryIds],
   confidence: 0.91,
   createdAt: new Date().toISOString(),
   summary: 'Planning work is concentrated in the first half of the day.',
