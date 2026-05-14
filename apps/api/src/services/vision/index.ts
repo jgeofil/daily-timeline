@@ -21,7 +21,7 @@ export function extractOcrText(input: ScreenshotAnalysisInput): string | null {
     return input.hintedText.trim();
   }
 
-  let decodedImageUrl = input.imageUrl;
+  let decodedImageUrl: string;
   try {
     decodedImageUrl = decodeURIComponent(input.imageUrl);
   } catch {
