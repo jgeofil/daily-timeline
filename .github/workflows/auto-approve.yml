@@ -1,0 +1,18 @@
+name: Auto approve
+
+on: pull_request
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  auto-approve:
+    runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
+    steps:
+      - uses: hmarr/auto-approve-action@a74055519ea4f7c370e5b15d6c24ae91527c83da # v4
+        with:
+          github-token: ${{ github.token }}
+          review-message: Dependabot PR approved
+
