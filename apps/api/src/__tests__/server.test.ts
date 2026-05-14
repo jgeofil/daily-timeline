@@ -54,6 +54,7 @@ describe('API server routes', () => {
         capturedAt: '2024-01-15T09:00:00.000Z',
         windowTitle: 'VSCode deploy warning',
         hintedText: 'TODO fix deploy error before review',
+        userId: 'user-1',
       },
     });
 

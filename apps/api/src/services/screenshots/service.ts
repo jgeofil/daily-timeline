@@ -21,7 +21,10 @@ export function ingestScreenshotEvent(input: ScreenshotIngestionInput, deps: Scr
     hintedText: input.hintedText ?? null,
   });
 
-  const linkedTimelineEntryIds = linkScreenshotToTimeline(deps.timelineEntries, {
+  // Filter timeline entries to only those belonging to the current user
+  const userTimelineEntries = deps.timelineEntries.filter((entry) => entry.userId === input.userId);
+  
+  const linkedTimelineEntryIds = linkScreenshotToTimeline(userTimelineEntries, {
     ocrText: analysis.ocrText,
     windowTitle: input.windowTitle ?? null,
     inferredTask: analysis.inferredTask,

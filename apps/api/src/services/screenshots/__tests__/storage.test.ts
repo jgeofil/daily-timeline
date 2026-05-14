@@ -38,8 +38,12 @@ describe('InMemoryScreenshotStorage', () => {
   it('list returns the inserted event', () => {
     const event = makeEvent('shot-1');
     storage.insert(event);
-    expect(storage.list()).toHaveLength(1);
-    expect(storage.list()[0].id).toBe('shot-1');
+    const list = storage.list();
+    expect(list).toHaveLength(1);
+    const first = list[0];
+    expect(first).toBeDefined();
+    if (!first) return;
+    expect(first.id).toBe('shot-1');
   });
 
   it('most recently inserted event appears first (unshift order)', () => {
@@ -48,9 +52,7 @@ describe('InMemoryScreenshotStorage', () => {
     storage.insert(makeEvent('third'));
 
     const list = storage.list();
-    expect(list[0].id).toBe('third');
-    expect(list[1].id).toBe('second');
-    expect(list[2].id).toBe('first');
+    expect(list.map((event) => event.id)).toEqual(['third', 'second', 'first']);
   });
 
   it('list returns a copy – mutating the returned array does not affect storage', () => {
@@ -94,7 +96,10 @@ describe('InMemoryScreenshotStorage', () => {
     event.linkedTimelineEntryIds = ['entry-1'];
 
     storage.insert(event);
-    const result = storage.list()[0];
+    const list = storage.list();
+    const result = list[0];
+    expect(result).toBeDefined();
+    if (!result) return;
 
     expect(result.windowTitle).toBe('Test Window');
     expect(result.ocrText).toBe('some text');

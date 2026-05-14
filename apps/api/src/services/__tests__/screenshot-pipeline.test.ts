@@ -100,8 +100,11 @@ describe('screenshot pipeline', () => {
     );
 
     expect(timelineEntries).toHaveLength(1);
-    expect(timelineEntries[0].source).toBe('screenshot');
-    expect(timelineEntries[0].userId).toBe('user-99');
+    const firstEntry = timelineEntries[0];
+    expect(firstEntry).toBeDefined();
+    if (!firstEntry) return;
+    expect(firstEntry.source).toBe('screenshot');
+    expect(firstEntry.userId).toBe('user-99');
   });
 
   it('ingestScreenshotEvent uses "Screenshot captured" as text fallback when ocrText and windowTitle are both null', () => {
@@ -119,7 +122,10 @@ describe('screenshot pipeline', () => {
     );
 
     // URL "x.png" yields no 12-char match → ocrText null; windowTitle not provided
-    expect(timelineEntries[0].text).toBe('Screenshot captured');
+    const fallbackEntry = timelineEntries[0];
+    expect(fallbackEntry).toBeDefined();
+    if (!fallbackEntry) return;
+    expect(fallbackEntry.text).toBe('Screenshot captured');
   });
 
   it('ingestScreenshotEvent returned ScreenshotEvent always has expected shape', () => {
@@ -178,8 +184,11 @@ describe('screenshot pipeline', () => {
       { storage, timelineEntries, insights: [] }
     );
 
-    expect(timelineEntries[0].tags[0]).toBe('screenshot');
-    expect(timelineEntries[0].tags.length).toBeLessThanOrEqual(6);
+    const taggedEntry = timelineEntries[0];
+    expect(taggedEntry).toBeDefined();
+    if (!taggedEntry) return;
+    expect(taggedEntry.tags[0]).toBe('screenshot');
+    expect(taggedEntry.tags.length).toBeLessThanOrEqual(6);
   });
 
   it('anomaly insight references both linked timeline entry IDs and the new entry ID', () => {
@@ -209,10 +218,13 @@ describe('screenshot pipeline', () => {
     );
 
     expect(insights).toHaveLength(1);
-    expect(insights[0].type).toBe('anomaly');
-    expect(insights[0].confidence).toBe(0.68);
+    const insight = insights[0];
+    expect(insight).toBeDefined();
+    if (!insight) return;
+    expect(insight.type).toBe('anomaly');
+    expect(insight.confidence).toBe(0.68);
     // Should reference the linked entry and the new timeline entry
-    expect(insights[0].entryIds.length).toBeGreaterThan(0);
+    expect(insight.entryIds.length).toBeGreaterThan(0);
   });
 
   it('ingestScreenshotEvent insight.entryIds are capped at 6', () => {
@@ -240,8 +252,11 @@ describe('screenshot pipeline', () => {
     );
 
     expect(insights).toHaveLength(1);
+    const cappedInsight = insights[0];
+    expect(cappedInsight).toBeDefined();
+    if (!cappedInsight) return;
     // entryIds: [...linkedTimelineEntryIds.slice(0,5), timelineEntry.id].slice(0, 6) = 6
-    expect(insights[0].entryIds.length).toBeLessThanOrEqual(6);
+    expect(cappedInsight.entryIds.length).toBeLessThanOrEqual(6);
   });
 
   it('ingestScreenshotEvent insight summary lists multiple anomalies', () => {
@@ -260,7 +275,10 @@ describe('screenshot pipeline', () => {
 
     expect(insights).toHaveLength(1);
     // All matched anomaly terms should appear in the summary
-    const summary = insights[0].summary;
+    const multiAnomalyInsight = insights[0];
+    expect(multiAnomalyInsight).toBeDefined();
+    if (!multiAnomalyInsight) return;
+    const summary = multiAnomalyInsight.summary;
     expect(summary).toContain('error');
     expect(summary).toContain('failed');
     expect(summary).toContain('timeout');
@@ -279,7 +297,10 @@ describe('screenshot pipeline', () => {
       { storage, timelineEntries, insights: [] }
     );
 
-    expect(timelineEntries[0].occurredAt).toBe('2024-03-20T15:30:00.000Z');
+    const occurredAtEntry = timelineEntries[0];
+    expect(occurredAtEntry).toBeDefined();
+    if (!occurredAtEntry) return;
+    expect(occurredAtEntry.occurredAt).toBe('2024-03-20T15:30:00.000Z');
   });
 
   it('ingestScreenshotEvent uses windowTitle as timeline text when ocrText is null', () => {
@@ -297,6 +318,9 @@ describe('screenshot pipeline', () => {
     );
 
     // No hintedText and URL too short → ocrText = null → fallback to windowTitle
-    expect(timelineEntries[0].text).toBe('Browser DevTools');
+    const windowTitleEntry = timelineEntries[0];
+    expect(windowTitleEntry).toBeDefined();
+    if (!windowTitleEntry) return;
+    expect(windowTitleEntry.text).toBe('Browser DevTools');
   });
 });
