@@ -3,7 +3,7 @@ import Fastify, { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify'
 import fastifyJwt from '@fastify/jwt';
 import type { Insight, ScreenshotEvent, TimelineEntry, VoiceCaptureSession } from '@daily-timeline/types';
 
-const JWT_SECRET = 'test-secret-at-least-16-chars-long';
+const JWT_SECRET = process.env.JWT_SECRET ?? 'jwt-test-placeholder-16ch';
 
 /**
  * Build a Fastify app with the same routes as server.ts, but without the
@@ -20,8 +20,8 @@ async function buildApp(): Promise<FastifyInstance> {
   app.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       await request.jwtVerify();
-    } catch (err: any) {
-      reply.send(err);
+    } catch (err: unknown) {
+      return reply.send(err);
     }
   });
 
@@ -37,12 +37,6 @@ async function buildApp(): Promise<FastifyInstance> {
   app.get('/insights', { preHandler: [app.authenticate] }, async () => ({ data: insights }));
 
   return app;
-}
-
-declare module 'fastify' {
-  interface FastifyInstance {
-    authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
-  }
 }
 
 describe('API server routes', () => {

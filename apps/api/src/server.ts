@@ -13,16 +13,10 @@ server.register(fastifyJwt, {
 server.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
   try {
     await request.jwtVerify();
-  } catch (err: any) {
-    reply.send(err);
+  } catch (err: unknown) {
+    return reply.send(err);
   }
 });
-
-declare module 'fastify' {
-  interface FastifyInstance {
-    authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
-  }
-}
 
 const timelineEntries: TimelineEntry[] = [];
 const voiceSessions: VoiceCaptureSession[] = [];
@@ -36,7 +30,8 @@ server.get('/voice/sessions', { preHandler: [server.authenticate] }, async () =>
 server.get('/screenshots/events', { preHandler: [server.authenticate] }, async () => ({ data: screenshotEvents }));
 server.get('/insights', { preHandler: [server.authenticate] }, async () => ({ data: insights }));
 
-server.listen({ port: config.PORT, host: '0.0.0.0' }).catch((error) => {
+server.listen({ port: config.PORT, host: '0.0.0.0' }).catch((error: Error) => {
   server.log.error(error);
   process.exit(1);
 });
+
