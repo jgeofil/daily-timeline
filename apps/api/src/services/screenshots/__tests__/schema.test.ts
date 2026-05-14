@@ -101,4 +101,37 @@ describe('ScreenshotIngestionSchema', () => {
       expect(paths).toContain('imageUrl');
     }
   });
+
+  it('rejects capturedAt that is a date-only string (missing time portion)', () => {
+    const result = ScreenshotIngestionSchema.safeParse({ ...validBase, capturedAt: '2024-01-15' });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects capturedAt that is an arbitrary non-datetime string', () => {
+    const result = ScreenshotIngestionSchema.safeParse({ ...validBase, capturedAt: 'tomorrow' });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts http imageUrl (not only https)', () => {
+    const result = ScreenshotIngestionSchema.safeParse({
+      ...validBase,
+      imageUrl: 'http://storage.example.com/screenshots/1.png',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects payload where imageUrl is null', () => {
+    const result = ScreenshotIngestionSchema.safeParse({ ...validBase, imageUrl: null });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects payload where userId is null', () => {
+    const result = ScreenshotIngestionSchema.safeParse({ ...validBase, userId: null });
+    expect(result.success).toBe(false);
+  });
+
+  it('windowTitle with a single non-empty character passes', () => {
+    const result = ScreenshotIngestionSchema.safeParse({ ...validBase, windowTitle: 'A' });
+    expect(result.success).toBe(true);
+  });
 });

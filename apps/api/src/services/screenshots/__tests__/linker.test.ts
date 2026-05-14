@@ -131,4 +131,47 @@ describe('linkScreenshotToTimeline', () => {
     // The entry has no tokens > 2 chars, so no overlap
     expect(ids).toEqual([]);
   });
+
+  it('is case-insensitive – uppercase entry text matches lowercase corpus tokens', () => {
+    const entry = makeEntry('e1', 'DEPLOY ERROR REVIEW');
+    const ids = linkScreenshotToTimeline([entry], {
+      ocrText: 'deploy error review',
+      windowTitle: null,
+      inferredTask: null,
+    });
+    expect(ids).toContain('e1');
+  });
+
+  it('returns exactly 5 IDs when exactly 5 entries match', () => {
+    const entries = Array.from({ length: 5 }, (_, i) =>
+      makeEntry(`e${i}`, `deploy review error timeout failed`)
+    );
+    const ids = linkScreenshotToTimeline(entries, {
+      ocrText: 'deploy review error timeout failed',
+      windowTitle: null,
+      inferredTask: null,
+    });
+    expect(ids).toHaveLength(5);
+  });
+
+  it('does not link entry when entry text is empty string', () => {
+    const entry = makeEntry('e1', '');
+    const ids = linkScreenshotToTimeline([entry], {
+      ocrText: 'deploy review error',
+      windowTitle: null,
+      inferredTask: null,
+    });
+    expect(ids).toEqual([]);
+  });
+
+  it('returns IDs preserving the original entry id string value', () => {
+    const entry = makeEntry('entry-abc-123', 'deploy failed review');
+    const ids = linkScreenshotToTimeline([entry], {
+      ocrText: 'deploy failed review',
+      windowTitle: null,
+      inferredTask: null,
+    });
+    expect(ids).toHaveLength(1);
+    expect(ids[0]).toBe('entry-abc-123');
+  });
 });

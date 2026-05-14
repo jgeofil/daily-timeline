@@ -73,4 +73,34 @@ describe('InMemoryScreenshotStorage', () => {
     storage.insert(event);
     expect(storage.list()).toHaveLength(2);
   });
+
+  it('two independent storage instances do not share events', () => {
+    const storageA = new InMemoryScreenshotStorage();
+    const storageB = new InMemoryScreenshotStorage();
+
+    storageA.insert(makeEvent('a-only'));
+
+    expect(storageA.list()).toHaveLength(1);
+    expect(storageB.list()).toHaveLength(0);
+  });
+
+  it('list() preserves all event fields of the inserted event', () => {
+    const event = makeEvent('full-event');
+    event.windowTitle = 'Test Window';
+    event.ocrText = 'some text';
+    event.anomalies = ['error'];
+    event.taskClues = ['deploy'];
+    event.entities = ['VSCode'];
+    event.linkedTimelineEntryIds = ['entry-1'];
+
+    storage.insert(event);
+    const result = storage.list()[0];
+
+    expect(result.windowTitle).toBe('Test Window');
+    expect(result.ocrText).toBe('some text');
+    expect(result.anomalies).toEqual(['error']);
+    expect(result.taskClues).toEqual(['deploy']);
+    expect(result.entities).toEqual(['VSCode']);
+    expect(result.linkedTimelineEntryIds).toEqual(['entry-1']);
+  });
 });

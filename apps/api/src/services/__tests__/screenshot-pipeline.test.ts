@@ -214,4 +214,89 @@ describe('screenshot pipeline', () => {
     // Should reference the linked entry and the new timeline entry
     expect(insights[0].entryIds.length).toBeGreaterThan(0);
   });
+
+  it('ingestScreenshotEvent insight.entryIds are capped at 6', () => {
+    // Create 6 pre-existing timeline entries all matching the screenshot signals
+    const timelineEntries: TimelineEntry[] = Array.from({ length: 6 }, (_, i) => ({
+      id: `linked-entry-${i}`,
+      userId: 'user-1',
+      source: 'voice' as const,
+      text: `deploy review error timeout failed incident ${i}`,
+      tags: ['deploy', 'review'],
+      createdAt: '2024-01-01T00:00:00.000Z',
+      occurredAt: '2024-01-01T00:00:00.000Z',
+    }));
+    const insights: Insight[] = [];
+    const storage = new InMemoryScreenshotStorage();
+
+    ingestScreenshotEvent(
+      {
+        imageUrl: 'https://storage.example.com/deploy-error.png',
+        capturedAt: '2024-01-15T09:00:00.000Z',
+        hintedText: 'TODO deploy review error timeout failed incident',
+        userId: 'user-1',
+      },
+      { storage, timelineEntries, insights }
+    );
+
+    expect(insights).toHaveLength(1);
+    // entryIds: [...linkedTimelineEntryIds.slice(0,5), timelineEntry.id].slice(0, 6) = 6
+    expect(insights[0].entryIds.length).toBeLessThanOrEqual(6);
+  });
+
+  it('ingestScreenshotEvent insight summary lists multiple anomalies', () => {
+    const insights: Insight[] = [];
+    const storage = new InMemoryScreenshotStorage();
+
+    ingestScreenshotEvent(
+      {
+        imageUrl: 'https://storage.example.com/error-failed-timeout.png',
+        capturedAt: '2024-01-15T09:00:00.000Z',
+        hintedText: 'error failed timeout panic denied warning',
+        userId: 'user-1',
+      },
+      { storage, timelineEntries: [], insights }
+    );
+
+    expect(insights).toHaveLength(1);
+    // All matched anomaly terms should appear in the summary
+    const summary = insights[0].summary;
+    expect(summary).toContain('error');
+    expect(summary).toContain('failed');
+    expect(summary).toContain('timeout');
+  });
+
+  it('ingestScreenshotEvent TimelineEntry occurredAt equals input capturedAt', () => {
+    const timelineEntries: TimelineEntry[] = [];
+    const storage = new InMemoryScreenshotStorage();
+
+    ingestScreenshotEvent(
+      {
+        imageUrl: 'https://storage.example.com/shot.png',
+        capturedAt: '2024-03-20T15:30:00.000Z',
+        userId: 'user-1',
+      },
+      { storage, timelineEntries, insights: [] }
+    );
+
+    expect(timelineEntries[0].occurredAt).toBe('2024-03-20T15:30:00.000Z');
+  });
+
+  it('ingestScreenshotEvent uses windowTitle as timeline text when ocrText is null', () => {
+    const timelineEntries: TimelineEntry[] = [];
+    const storage = new InMemoryScreenshotStorage();
+
+    ingestScreenshotEvent(
+      {
+        imageUrl: 'https://storage.example.com/x.png',
+        capturedAt: '2024-01-15T09:00:00.000Z',
+        windowTitle: 'Browser DevTools',
+        userId: 'user-1',
+      },
+      { storage, timelineEntries, insights: [] }
+    );
+
+    // No hintedText and URL too short → ocrText = null → fallback to windowTitle
+    expect(timelineEntries[0].text).toBe('Browser DevTools');
+  });
 });

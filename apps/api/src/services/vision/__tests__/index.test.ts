@@ -202,4 +202,58 @@ describe('analyzeScreenshot', () => {
     expect(result.anomalies).toContain('failed');
     expect(result.anomalies).toContain('warning');
   });
+
+  it('URL underscores are replaced with spaces during extraction', () => {
+    const result = extractOcrText({
+      imageUrl: 'https://example.com/deploy_error_screenshot_view.png',
+      windowTitle: null,
+      hintedText: null,
+    });
+    // underscores replaced to spaces, resulting string > 12 chars
+    expect(result).not.toBeNull();
+    expect(result).toContain('deploy');
+  });
+
+  it('windowTitle and ocrText both contribute to contextText for clue detection', () => {
+    // windowTitle has "error" (anomaly), hintedText has "todo" (task clue)
+    const result = analyzeScreenshot({
+      imageUrl: 'https://example.com/img.png',
+      windowTitle: 'Error Log Viewer',
+      hintedText: 'TODO fix this',
+    });
+    expect(result.anomalies).toContain('error');
+    expect(result.taskClues).toContain('todo');
+  });
+
+  it('task clue priority follows TASK_CLUE_TERMS order (first term wins inferredTask)', () => {
+    // TASK_CLUE_TERMS = ['todo', 'fixme', 'deploy', ...]; 'fixme' comes before 'deploy'
+    // but 'todo' is first in the list — if text has both 'todo' and 'deploy', inferredTask uses 'todo'
+    const result = analyzeScreenshot({
+      imageUrl: 'https://example.com/img.png',
+      windowTitle: null,
+      hintedText: 'todo deploy review',
+    });
+    expect(result.inferredTask).toBe('Working on todo workflow');
+  });
+
+  it('entities from windowTitle and ocrText are combined and deduplicated', () => {
+    const result = analyzeScreenshot({
+      imageUrl: 'https://example.com/img.png',
+      windowTitle: 'VSCode Editor',
+      hintedText: 'VSCode opened new Terminal tab',
+    });
+    // VSCode appears in both windowTitle and hintedText; should only appear once
+    const vscodeCount = result.entities.filter((e) => e === 'VSCode').length;
+    expect(vscodeCount).toBe(1);
+    expect(result.entities).toContain('Terminal');
+  });
+
+  it('returns ocrText as null when URL path has no 12-char alphanumeric run and hintedText is null', () => {
+    const result = analyzeScreenshot({
+      imageUrl: 'https://x.io/a/b.png',
+      windowTitle: null,
+      hintedText: null,
+    });
+    expect(result.ocrText).toBeNull();
+  });
 });
