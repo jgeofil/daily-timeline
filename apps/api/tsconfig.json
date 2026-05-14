@@ -2,10 +2,9 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "module": "CommonJS",
-    "moduleResolution": "Node",
     "types": ["node"],
     "verbatimModuleSyntax": false
   },
   "include": ["src"]
 }
+
