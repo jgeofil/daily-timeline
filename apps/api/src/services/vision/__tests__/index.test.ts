@@ -64,14 +64,15 @@ describe('extractOcrText', () => {
   });
 
   it('handles an undecodable URL gracefully and falls back to raw URL', () => {
-    // decodeURIComponent will throw on lone surrogates/invalid sequences; we simulate with %EF%BF (incomplete)
+    // malformed percent-encoding should make decodeURIComponent throw
     const result = extractOcrText({
-      imageUrl: 'https://example.com/this-long-enough-fallback.png',
+      imageUrl: 'https://example.com/%E0%A4%A/this-long-enough-fallback.png',
       windowTitle: null,
       hintedText: null,
     });
-    // The URL is valid; extraction succeeds
-    expect(typeof result === 'string' || result === null).toBe(true);
+    // fallback should still extract from raw URL path
+    expect(result).not.toBeNull();
+    expect(result).toContain('fallback');
   });
 
   it('returns hintedText even when a URL would also yield text', () => {
