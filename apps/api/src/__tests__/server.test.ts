@@ -1,14 +1,29 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import Fastify, { FastifyInstance } from 'fastify';
+import Fastify, { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import fastifyJwt from '@fastify/jwt';
 import type { Insight, ScreenshotEvent, TimelineEntry, VoiceCaptureSession } from '@daily-timeline/types';
+
+const JWT_SECRET = process.env.JWT_SECRET ?? 'jwt-test-placeholder-16ch';
 
 /**
  * Build a Fastify app with the same routes as server.ts, but without the
  * module-level side effects (readConfig(process.env) and server.listen()).
  * This mirrors exactly the routes defined in apps/api/src/server.ts.
  */
-function buildApp(): FastifyInstance {
+async function buildApp(): Promise<FastifyInstance> {
   const app = Fastify({ logger: false });
+
+  await app.register(fastifyJwt, {
+    secret: JWT_SECRET
+  });
+
+  app.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      await request.jwtVerify();
+    } catch (err: unknown) {
+      return reply.send(err);
+    }
+  });
 
   const timelineEntries: TimelineEntry[] = [];
   const voiceSessions: VoiceCaptureSession[] = [];
@@ -16,10 +31,10 @@ function buildApp(): FastifyInstance {
   const insights: Insight[] = [];
 
   app.get('/health', async () => ({ ok: true, service: 'daily-timeline-api' }));
-  app.get('/timeline/entries', async () => ({ data: timelineEntries }));
-  app.get('/voice/sessions', async () => ({ data: voiceSessions }));
-  app.get('/screenshots/events', async () => ({ data: screenshotEvents }));
-  app.get('/insights', async () => ({ data: insights }));
+  app.get('/timeline/entries', { preHandler: [app.authenticate] }, async () => ({ data: timelineEntries }));
+  app.get('/voice/sessions', { preHandler: [app.authenticate] }, async () => ({ data: voiceSessions }));
+  app.get('/screenshots/events', { preHandler: [app.authenticate] }, async () => ({ data: screenshotEvents }));
+  app.get('/insights', { preHandler: [app.authenticate] }, async () => ({ data: insights }));
 
   return app;
 }
@@ -28,7 +43,7 @@ describe('API server routes', () => {
   let app: FastifyInstance;
 
   beforeEach(async () => {
-    app = buildApp();
+    app = await buildApp();
     await app.ready();
   });
 
@@ -53,8 +68,21 @@ describe('API server routes', () => {
   });
 
   describe('GET /timeline/entries', () => {
-    it('returns 200 with empty data array', async () => {
+    it('returns 401 Unauthorized when no token is provided', async () => {
       const response = await app.inject({ method: 'GET', url: '/timeline/entries' });
+
+      expect(response.statusCode).toBe(401);
+    });
+
+    it('returns 200 with empty data array when valid token is provided', async () => {
+      const token = app.jwt.sign({ user: 'test' });
+      const response = await app.inject({
+        method: 'GET',
+        url: '/timeline/entries',
+        headers: {
+          authorization: `Bearer ${token}`
+        }
+      });
 
       expect(response.statusCode).toBe(200);
       const body = response.json();
@@ -62,7 +90,14 @@ describe('API server routes', () => {
     });
 
     it('data field is an array', async () => {
-      const response = await app.inject({ method: 'GET', url: '/timeline/entries' });
+      const token = app.jwt.sign({ user: 'test' });
+      const response = await app.inject({
+        method: 'GET',
+        url: '/timeline/entries',
+        headers: {
+          authorization: `Bearer ${token}`
+        }
+      });
 
       const body = response.json();
       expect(Array.isArray(body.data)).toBe(true);
@@ -70,8 +105,21 @@ describe('API server routes', () => {
   });
 
   describe('GET /voice/sessions', () => {
-    it('returns 200 with empty data array', async () => {
+    it('returns 401 Unauthorized when no token is provided', async () => {
       const response = await app.inject({ method: 'GET', url: '/voice/sessions' });
+
+      expect(response.statusCode).toBe(401);
+    });
+
+    it('returns 200 with empty data array when valid token is provided', async () => {
+      const token = app.jwt.sign({ user: 'test' });
+      const response = await app.inject({
+        method: 'GET',
+        url: '/voice/sessions',
+        headers: {
+          authorization: `Bearer ${token}`
+        }
+      });
 
       expect(response.statusCode).toBe(200);
       const body = response.json();
@@ -79,7 +127,14 @@ describe('API server routes', () => {
     });
 
     it('data field is an array', async () => {
-      const response = await app.inject({ method: 'GET', url: '/voice/sessions' });
+      const token = app.jwt.sign({ user: 'test' });
+      const response = await app.inject({
+        method: 'GET',
+        url: '/voice/sessions',
+        headers: {
+          authorization: `Bearer ${token}`
+        }
+      });
 
       const body = response.json();
       expect(Array.isArray(body.data)).toBe(true);
@@ -87,8 +142,21 @@ describe('API server routes', () => {
   });
 
   describe('GET /screenshots/events', () => {
-    it('returns 200 with empty data array', async () => {
+    it('returns 401 Unauthorized when no token is provided', async () => {
       const response = await app.inject({ method: 'GET', url: '/screenshots/events' });
+
+      expect(response.statusCode).toBe(401);
+    });
+
+    it('returns 200 with empty data array when valid token is provided', async () => {
+      const token = app.jwt.sign({ user: 'test' });
+      const response = await app.inject({
+        method: 'GET',
+        url: '/screenshots/events',
+        headers: {
+          authorization: `Bearer ${token}`
+        }
+      });
 
       expect(response.statusCode).toBe(200);
       const body = response.json();
@@ -96,7 +164,14 @@ describe('API server routes', () => {
     });
 
     it('data field is an array', async () => {
-      const response = await app.inject({ method: 'GET', url: '/screenshots/events' });
+      const token = app.jwt.sign({ user: 'test' });
+      const response = await app.inject({
+        method: 'GET',
+        url: '/screenshots/events',
+        headers: {
+          authorization: `Bearer ${token}`
+        }
+      });
 
       const body = response.json();
       expect(Array.isArray(body.data)).toBe(true);
@@ -104,8 +179,21 @@ describe('API server routes', () => {
   });
 
   describe('GET /insights', () => {
-    it('returns 200 with empty data array', async () => {
+    it('returns 401 Unauthorized when no token is provided', async () => {
       const response = await app.inject({ method: 'GET', url: '/insights' });
+
+      expect(response.statusCode).toBe(401);
+    });
+
+    it('returns 200 with empty data array when valid token is provided', async () => {
+      const token = app.jwt.sign({ user: 'test' });
+      const response = await app.inject({
+        method: 'GET',
+        url: '/insights',
+        headers: {
+          authorization: `Bearer ${token}`
+        }
+      });
 
       expect(response.statusCode).toBe(200);
       const body = response.json();
@@ -113,7 +201,14 @@ describe('API server routes', () => {
     });
 
     it('data field is an array', async () => {
-      const response = await app.inject({ method: 'GET', url: '/insights' });
+      const token = app.jwt.sign({ user: 'test' });
+      const response = await app.inject({
+        method: 'GET',
+        url: '/insights',
+        headers: {
+          authorization: `Bearer ${token}`
+        }
+      });
 
       const body = response.json();
       expect(Array.isArray(body.data)).toBe(true);
@@ -135,16 +230,32 @@ describe('API server routes', () => {
   });
 
   describe('response shape consistency', () => {
-    it('all list endpoints share the same { data: [] } shape when empty', async () => {
+    it('all list endpoints share the same { data: [] } shape when empty and authenticated', async () => {
       const endpoints = ['/timeline/entries', '/voice/sessions', '/screenshots/events', '/insights'];
+      const token = app.jwt.sign({ user: 'test' });
 
       for (const endpoint of endpoints) {
-        const response = await app.inject({ method: 'GET', url: endpoint });
+        const response = await app.inject({
+          method: 'GET',
+          url: endpoint,
+          headers: {
+            authorization: `Bearer ${token}`
+          }
+        });
         expect(response.statusCode).toBe(200);
         const body = response.json();
         expect(body).toHaveProperty('data');
         expect(Array.isArray(body.data)).toBe(true);
         expect(body.data).toHaveLength(0);
+      }
+    });
+
+    it('all list endpoints return 401 when not authenticated', async () => {
+      const endpoints = ['/timeline/entries', '/voice/sessions', '/screenshots/events', '/insights'];
+
+      for (const endpoint of endpoints) {
+        const response = await app.inject({ method: 'GET', url: endpoint });
+        expect(response.statusCode).toBe(401);
       }
     });
   });

@@ -4,168 +4,174 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const pkg = JSON.parse(
+
+const rootPkg = JSON.parse(
   readFileSync(resolve(__dirname, '../package.json'), 'utf-8')
 );
 
+const lockFile = JSON.parse(
+  readFileSync(resolve(__dirname, '../package-lock.json'), 'utf-8')
+);
+
 describe('root package.json manifest', () => {
-  describe('dependencies – version constraints changed in PR', () => {
-    describe('better-sqlite3', () => {
-      it('is present in dependencies', () => {
-        expect(pkg.dependencies).toHaveProperty('better-sqlite3');
-      });
-
-      it('targets the ^11 major series (downgraded from ^12)', () => {
-        const version: string = pkg.dependencies['better-sqlite3'];
-        expect(version).toMatch(/^\^11\./);
-      });
-
-      it('is at least ^11.8.1', () => {
-        const version: string = pkg.dependencies['better-sqlite3'];
-        // Semver range must be >= 11.8.1 within the ^11 series
-        const [, major, minor, patch] = version.match(/^[\^~]?(\d+)\.(\d+)\.(\d+)/)!;
-        expect(Number(major)).toBe(11);
-        expect(Number(minor)).toBeGreaterThanOrEqual(8);
-        if (Number(minor) === 8) {
-          expect(Number(patch)).toBeGreaterThanOrEqual(1);
-        }
-      });
-
-      it('does not target the ^12 major series', () => {
-        const version: string = pkg.dependencies['better-sqlite3'];
-        expect(version).not.toMatch(/^\^12\./);
-      });
+  describe('production dependency versions (PR downgrade changes)', () => {
+    it('pins better-sqlite3 to ^11.8.1 (downgraded from ^12.x)', () => {
+      expect(rootPkg.dependencies['better-sqlite3']).toBe('^11.8.1');
     });
 
-    describe('zod', () => {
-      it('is present in dependencies', () => {
-        expect(pkg.dependencies).toHaveProperty('zod');
-      });
+    it('does not use better-sqlite3 v12.x or higher', () => {
+      const version = rootPkg.dependencies['better-sqlite3'];
+      expect(version).not.toMatch(/^\^12\./);
+      expect(version).not.toMatch(/^\^13\./);
+    });
 
-      it('targets the ^3 major series (downgraded from ^4)', () => {
-        const version: string = pkg.dependencies['zod'];
-        expect(version).toMatch(/^\^3\./);
-      });
+    it('pins zod to ^3.24.2 (downgraded from ^4.x)', () => {
+      expect(rootPkg.dependencies['zod']).toBe('^3.24.2');
+    });
 
-      it('is at least ^3.24.2', () => {
-        const version: string = pkg.dependencies['zod'];
-        const [, major, minor, patch] = version.match(/^[\^~]?(\d+)\.(\d+)\.(\d+)/)!;
-        expect(Number(major)).toBe(3);
-        expect(Number(minor)).toBeGreaterThanOrEqual(24);
-        if (Number(minor) === 24) {
-          expect(Number(patch)).toBeGreaterThanOrEqual(2);
-        }
-      });
+    it('does not use zod v4.x or higher', () => {
+      const version = rootPkg.dependencies['zod'];
+      expect(version).not.toMatch(/^\^4\./);
+      expect(version).not.toMatch(/^\^5\./);
+    });
 
-      it('does not target the ^4 major series', () => {
-        const version: string = pkg.dependencies['zod'];
-        expect(version).not.toMatch(/^\^4\./);
-      });
+    it('zod version is a valid semver range', () => {
+      const version = rootPkg.dependencies['zod'];
+      expect(version).toMatch(/^[\^~]?\d+\.\d+\.\d+/);
+    });
+
+    it('better-sqlite3 version is a valid semver range', () => {
+      const version = rootPkg.dependencies['better-sqlite3'];
+      expect(version).toMatch(/^[\^~]?\d+\.\d+\.\d+/);
     });
   });
 
-  describe('devDependencies – version constraints changed in PR', () => {
-    describe('@types/node', () => {
-      it('is present in devDependencies', () => {
-        expect(pkg.devDependencies).toHaveProperty('@types/node');
-      });
-
-      it('targets the ^22 major series (downgraded from ^25)', () => {
-        const version: string = pkg.devDependencies['@types/node'];
-        expect(version).toMatch(/^\^22\./);
-      });
-
-      it('is at least ^22.13.8', () => {
-        const version: string = pkg.devDependencies['@types/node'];
-        const [, major, minor, patch] = version.match(/^[\^~]?(\d+)\.(\d+)\.(\d+)/)!;
-        expect(Number(major)).toBe(22);
-        expect(Number(minor)).toBeGreaterThanOrEqual(13);
-        if (Number(minor) === 13) {
-          expect(Number(patch)).toBeGreaterThanOrEqual(8);
-        }
-      });
-
-      it('does not target the ^25 major series', () => {
-        const version: string = pkg.devDependencies['@types/node'];
-        expect(version).not.toMatch(/^\^25\./);
-      });
+  describe('devDependency versions (PR downgrade changes)', () => {
+    it('pins @types/node to ^22.13.8 (downgraded from ^25.x)', () => {
+      expect(rootPkg.devDependencies['@types/node']).toBe('^22.13.8');
     });
 
-    describe('typescript', () => {
-      it('is present in devDependencies', () => {
-        expect(pkg.devDependencies).toHaveProperty('typescript');
-      });
+    it('does not use @types/node v25.x or higher', () => {
+      const version = rootPkg.devDependencies['@types/node'];
+      expect(version).not.toMatch(/^\^25\./);
+      expect(version).not.toMatch(/^\^26\./);
+    });
 
-      it('targets the ^5 major series (downgraded from ^6)', () => {
-        const version: string = pkg.devDependencies['typescript'];
-        expect(version).toMatch(/^\^5\./);
-      });
+    it('pins typescript to ^5.7.3 (downgraded from ^6.x)', () => {
+      expect(rootPkg.devDependencies['typescript']).toBe('^5.7.3');
+    });
 
-      it('is at least ^5.7.3', () => {
-        const version: string = pkg.devDependencies['typescript'];
-        const [, major, minor, patch] = version.match(/^[\^~]?(\d+)\.(\d+)\.(\d+)/)!;
-        expect(Number(major)).toBe(5);
-        expect(Number(minor)).toBeGreaterThanOrEqual(7);
-        if (Number(minor) === 7) {
-          expect(Number(patch)).toBeGreaterThanOrEqual(3);
-        }
-      });
+    it('does not use typescript v6.x or higher', () => {
+      const version = rootPkg.devDependencies['typescript'];
+      expect(version).not.toMatch(/^\^6\./);
+      expect(version).not.toMatch(/^\^7\./);
+    });
 
-      it('does not target the ^6 major series', () => {
-        const version: string = pkg.devDependencies['typescript'];
-        expect(version).not.toMatch(/^\^6\./);
-      });
+    it('@types/node version is a valid semver range', () => {
+      const version = rootPkg.devDependencies['@types/node'];
+      expect(version).toMatch(/^[\^~]?\d+\.\d+\.\d+/);
+    });
+
+    it('typescript version is a valid semver range', () => {
+      const version = rootPkg.devDependencies['typescript'];
+      expect(version).toMatch(/^[\^~]?\d+\.\d+\.\d+/);
     });
   });
 
-  describe('unchanged dependencies still present', () => {
-    it('cors is still in dependencies', () => {
-      expect(pkg.dependencies).toHaveProperty('cors');
+  describe('unchanged production dependencies remain present', () => {
+    it('cors dependency is still present', () => {
+      expect(rootPkg.dependencies).toHaveProperty('cors');
     });
 
-    it('dotenv is still in dependencies', () => {
-      expect(pkg.dependencies).toHaveProperty('dotenv');
+    it('dotenv dependency is still present', () => {
+      expect(rootPkg.dependencies).toHaveProperty('dotenv');
     });
 
-    it('express is still in dependencies', () => {
-      expect(pkg.dependencies).toHaveProperty('express');
-    });
-
-    it('vitest is still in devDependencies', () => {
-      expect(pkg.devDependencies).toHaveProperty('vitest');
-    });
-
-    it('supertest is still in devDependencies', () => {
-      expect(pkg.devDependencies).toHaveProperty('supertest');
+    it('express dependency is still present', () => {
+      expect(rootPkg.dependencies).toHaveProperty('express');
     });
   });
 
-  describe('package.json structural integrity', () => {
+  describe('unchanged devDependencies remain present', () => {
+    it('@types/better-sqlite3 is still present', () => {
+      expect(rootPkg.devDependencies).toHaveProperty('@types/better-sqlite3');
+    });
+
+    it('@types/express is still present', () => {
+      expect(rootPkg.devDependencies).toHaveProperty('@types/express');
+    });
+
+    it('vitest is still present', () => {
+      expect(rootPkg.devDependencies).toHaveProperty('vitest');
+    });
+
+    it('tsx is still present', () => {
+      expect(rootPkg.devDependencies).toHaveProperty('tsx');
+    });
+  });
+
+  describe('package.json structure', () => {
     it('has a name field', () => {
-      expect(pkg.name).toBeDefined();
-      expect(typeof pkg.name).toBe('string');
+      expect(rootPkg.name).toBeDefined();
+      expect(typeof rootPkg.name).toBe('string');
     });
 
     it('has a dependencies object', () => {
-      expect(pkg.dependencies).toBeDefined();
-      expect(typeof pkg.dependencies).toBe('object');
+      expect(rootPkg.dependencies).toBeDefined();
+      expect(typeof rootPkg.dependencies).toBe('object');
     });
 
     it('has a devDependencies object', () => {
-      expect(pkg.devDependencies).toBeDefined();
-      expect(typeof pkg.devDependencies).toBe('object');
+      expect(rootPkg.devDependencies).toBeDefined();
+      expect(typeof rootPkg.devDependencies).toBe('object');
     });
 
-    it('all dependency version strings start with ^ or ~', () => {
-      for (const [name, version] of Object.entries(pkg.dependencies as Record<string, string>)) {
-        expect(version, `${name} version should start with ^ or ~`).toMatch(/^[\^~]/);
-      }
+    it('has a test script defined', () => {
+      expect(rootPkg.scripts).toHaveProperty('test');
     });
+  });
+});
 
-    it('all devDependency version strings start with ^ or ~', () => {
-      for (const [name, version] of Object.entries(pkg.devDependencies as Record<string, string>)) {
-        expect(version, `${name} version should start with ^ or ~`).toMatch(/^[\^~]/);
-      }
-    });
+describe('package-lock.json vite version (PR downgrade from 8.0.5 to 8.0.3)', () => {
+  const viteEntry = lockFile.packages?.['node_modules/vite'];
+
+  it('vite entry exists in package-lock.json', () => {
+    expect(viteEntry).toBeDefined();
+  });
+
+  it('vite is pinned to version 8.0.3 (downgraded from 8.0.5)', () => {
+    expect(viteEntry?.version).toBe('8.0.3');
+  });
+
+  it('vite is not at version 8.0.5 (old version)', () => {
+    expect(viteEntry?.version).not.toBe('8.0.5');
+  });
+
+  it('vite entry has a resolved URL', () => {
+    expect(viteEntry?.resolved).toBeDefined();
+    expect(typeof viteEntry?.resolved).toBe('string');
+  });
+
+  it('vite resolved URL points to version 8.0.3 tarball', () => {
+    expect(viteEntry?.resolved).toContain('vite-8.0.3.tgz');
+  });
+
+  it('vite resolved URL does not point to 8.0.5 tarball', () => {
+    expect(viteEntry?.resolved).not.toContain('vite-8.0.5.tgz');
+  });
+
+  it('vite entry has an integrity hash', () => {
+    expect(viteEntry?.integrity).toBeDefined();
+    expect(typeof viteEntry?.integrity).toBe('string');
+  });
+
+  it('vite is marked as a devDependency', () => {
+    expect(viteEntry?.dev).toBe(true);
+  });
+
+  it('vite esbuild peer dependency allows ^0.27.0 only (removed ^0.28.0)', () => {
+    const esbuildPeer = viteEntry?.peerDependencies?.esbuild;
+    expect(esbuildPeer).toBe('^0.27.0');
+    expect(esbuildPeer).not.toContain('^0.28.0');
   });
 });
