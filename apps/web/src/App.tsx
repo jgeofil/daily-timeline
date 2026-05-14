@@ -56,7 +56,6 @@ export function App() {
         if (!response.ok) return;
         const body = (await response.json()) as { data: ScreenshotEvent[] };
         setScreenshotEvents((prev) => {
-          const existingIds = new Set(prev.map((e) => e.id));
           // Server data is authoritative for ordering, but preserve locally-received
           return [...body.data, ...prev.filter((e) => !body.data.some((s) => s.id === e.id))];
         });
