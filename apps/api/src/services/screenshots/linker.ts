@@ -13,7 +13,8 @@ export function linkScreenshotToTimeline(
   timelineEntries: TimelineEntry[],
   signals: { ocrText: string | null; windowTitle: string | null; inferredTask: string | null }
 ): string[] {
-  const corpus = [signals.ocrText, signals.windowTitle, signals.inferredTask].filter(Boolean).join(' ');
+  // Exclude inferredTask to avoid boilerplate words like "Working on", "workflow", "Investigating"
+  const corpus = [signals.ocrText, signals.windowTitle].filter(Boolean).join(' ');
   if (!corpus) {
     return [];
   }
