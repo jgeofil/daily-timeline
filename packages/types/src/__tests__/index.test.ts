@@ -143,51 +143,121 @@ describe('ScreenshotEvent', () => {
   it('accepts a fully populated ScreenshotEvent', () => {
     const event: ScreenshotEvent = {
       id: 'screenshot-1',
-      timelineEntryId: 'entry-1',
+      imageUrl: 'https://storage.example.com/screenshots/1.png',
       capturedAt: '2024-01-15T09:00:00.000Z',
-      url: 'https://storage.example.com/screenshots/1.png',
-      width: 1920,
-      height: 1080,
-      appContext: 'VSCode',
-      extractedText: 'function hello() {}',
+      createdAt: '2024-01-15T09:00:05.000Z',
+      windowTitle: 'VSCode - timeline project',
+      inferredTask: 'Implement screenshot ingestion flow',
+      ocrText: 'function hello() {}',
+      entities: ['VSCode', 'timeline'],
+      taskClues: ['TODO', 'timeline'],
+      anomalies: ['Unexpected error modal'],
+      linkedTimelineEntryIds: ['entry-1'],
     };
 
     expect(event.id).toBe('screenshot-1');
-    expect(event.width).toBe(1920);
-    expect(event.height).toBe(1080);
-    expect(event.appContext).toBe('VSCode');
-    expect(event.extractedText).toBe('function hello() {}');
+    expect(event.windowTitle).toContain('VSCode');
+    expect(event.inferredTask).toContain('screenshot ingestion');
+    expect(event.ocrText).toBe('function hello() {}');
+    expect(event.entities).toEqual(['VSCode', 'timeline']);
+    expect(event.linkedTimelineEntryIds).toEqual(['entry-1']);
   });
 
-  it('accepts null for optional appContext and extractedText', () => {
+  it('accepts null for optional windowTitle, inferredTask and ocrText', () => {
     const event: ScreenshotEvent = {
       id: 'screenshot-2',
-      timelineEntryId: 'entry-1',
+      imageUrl: 'https://storage.example.com/screenshots/2.png',
       capturedAt: '2024-01-15T09:00:00.000Z',
-      url: 'https://storage.example.com/screenshots/2.png',
-      width: 800,
-      height: 600,
-      appContext: null,
-      extractedText: null,
+      createdAt: '2024-01-15T09:00:05.000Z',
+      windowTitle: null,
+      inferredTask: null,
+      ocrText: null,
+      entities: [],
+      taskClues: [],
+      anomalies: [],
+      linkedTimelineEntryIds: [],
     };
 
-    expect(event.appContext).toBeNull();
-    expect(event.extractedText).toBeNull();
+    expect(event.windowTitle).toBeNull();
+    expect(event.inferredTask).toBeNull();
+    expect(event.ocrText).toBeNull();
   });
 
-  it('width and height are numeric', () => {
+  it('linkedTimelineEntryIds is an array of entry IDs', () => {
     const event: ScreenshotEvent = {
       id: 'x',
-      timelineEntryId: 'y',
+      imageUrl: 'https://example.com/img.png',
       capturedAt: '2024-01-01T00:00:00.000Z',
-      url: 'https://example.com/img.png',
-      width: 1024,
-      height: 768,
-      appContext: null,
-      extractedText: null,
+      createdAt: '2024-01-01T00:00:01.000Z',
+      windowTitle: null,
+      inferredTask: null,
+      ocrText: null,
+      entities: ['Terminal'],
+      taskClues: ['build'],
+      anomalies: [],
+      linkedTimelineEntryIds: ['entry-1', 'entry-2'],
     };
-    expect(typeof event.width).toBe('number');
-    expect(typeof event.height).toBe('number');
+    expect(Array.isArray(event.linkedTimelineEntryIds)).toBe(true);
+    expect(event.linkedTimelineEntryIds).toHaveLength(2);
+  });
+
+  it('entities, taskClues and anomalies are all arrays', () => {
+    const event: ScreenshotEvent = {
+      id: 'arrays-check',
+      imageUrl: 'https://example.com/img.png',
+      capturedAt: '2024-01-01T00:00:00.000Z',
+      createdAt: '2024-01-01T00:00:01.000Z',
+      windowTitle: 'Editor',
+      inferredTask: 'Working on deploy workflow',
+      ocrText: 'some text',
+      entities: ['VSCode', 'Terminal'],
+      taskClues: ['deploy', 'review'],
+      anomalies: ['error', 'warning'],
+      linkedTimelineEntryIds: [],
+    };
+    expect(Array.isArray(event.entities)).toBe(true);
+    expect(Array.isArray(event.taskClues)).toBe(true);
+    expect(Array.isArray(event.anomalies)).toBe(true);
+    expect(event.entities).toHaveLength(2);
+    expect(event.taskClues).toHaveLength(2);
+    expect(event.anomalies).toHaveLength(2);
+  });
+
+  it('imageUrl is stored as a string field on the event', () => {
+    const event: ScreenshotEvent = {
+      id: 'url-check',
+      imageUrl: 'https://storage.example.com/screenshots/abc123.png',
+      capturedAt: '2024-01-01T00:00:00.000Z',
+      createdAt: '2024-01-01T00:00:01.000Z',
+      windowTitle: null,
+      inferredTask: null,
+      ocrText: null,
+      entities: [],
+      taskClues: [],
+      anomalies: [],
+      linkedTimelineEntryIds: [],
+    };
+    expect(typeof event.imageUrl).toBe('string');
+    expect(event.imageUrl).toBe('https://storage.example.com/screenshots/abc123.png');
+  });
+
+  it('createdAt and capturedAt are separate timestamp fields', () => {
+    const event: ScreenshotEvent = {
+      id: 'timestamps',
+      imageUrl: 'https://example.com/img.png',
+      capturedAt: '2024-01-15T09:00:00.000Z',
+      createdAt: '2024-01-15T09:00:05.000Z',
+      windowTitle: null,
+      inferredTask: null,
+      ocrText: null,
+      entities: [],
+      taskClues: [],
+      anomalies: [],
+      linkedTimelineEntryIds: [],
+    };
+    expect(event.capturedAt).toBe('2024-01-15T09:00:00.000Z');
+    expect(event.createdAt).toBe('2024-01-15T09:00:05.000Z');
+    expect(event.capturedAt).not.toBe(event.createdAt);
   });
 });
 
