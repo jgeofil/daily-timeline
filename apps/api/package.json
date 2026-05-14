@@ -11,7 +11,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@daily-timeline/types": "0.1.0",
+    "@daily-timeline/types": "workspace:*",
     "fastify": "^5.2.1",
     "zod": "^3.24.2"
   },
