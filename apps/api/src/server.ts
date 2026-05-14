@@ -3,6 +3,7 @@ import cors from '@fastify/cors';
 import { z } from 'zod';
 import type { Insight, ScreenshotEvent, TimelineEntry, VoiceCaptureSession } from '@daily-timeline/types';
 import { readConfig } from './config';
+import { corsOptions } from './cors-config';
 
 const config = readConfig(process.env);
 const server = Fastify({ logger: { level: config.LOG_LEVEL } });
@@ -17,9 +18,8 @@ const corsAllowedOrigins = z
   .parse(process.env.CORS_ALLOWED_ORIGINS);
 
 server.register(cors, {
-  origin: corsAllowedOrigins,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  ...corsOptions,
+  origin: corsAllowedOrigins
 });
 
 const timelineEntries: TimelineEntry[] = [];

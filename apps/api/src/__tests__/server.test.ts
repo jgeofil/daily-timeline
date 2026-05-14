@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import type { Insight, ScreenshotEvent, TimelineEntry, VoiceCaptureSession } from '@daily-timeline/types';
+import { corsOptions } from '../cors-config';
 
 const JWT_SECRET = process.env.JWT_SECRET ?? 'jwt-test-placeholder-16ch';
 
@@ -14,9 +15,8 @@ function buildApp(allowedOrigins: string[] = ['http://localhost:5173']): Fastify
   const app = Fastify({ logger: false });
 
   app.register(cors, {
-    origin: allowedOrigins,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    ...corsOptions,
+    origin: allowedOrigins
   });
 
   const timelineEntries: TimelineEntry[] = [];
