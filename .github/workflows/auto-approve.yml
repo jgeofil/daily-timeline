@@ -13,5 +13,6 @@ jobs:
     steps:
       - uses: hmarr/auto-approve-action@v4
         with:
-          github-token: ${{ secrets.SOME_USERS_PAT }}
+          github-token: ${{ github.token }}
           review-message: Dependabot PR approved
+
