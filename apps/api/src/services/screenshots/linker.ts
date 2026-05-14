@@ -5,7 +5,7 @@ function tokenize(text: string): Set<string> {
     text
       .toLowerCase()
       .split(/[^a-z0-9]+/)
-      .filter((token) => token.length > 2)
+      .filter((token) => token.length > 1)
   );
 }
 
