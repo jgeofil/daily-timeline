@@ -1,21 +1,25 @@
-import Fastify, { FastifyReply, FastifyRequest } from 'fastify';
-import fastifyJwt from '@fastify/jwt';
+import Fastify from 'fastify';
+import cors from '@fastify/cors';
+import { z } from 'zod';
 import type { Insight, ScreenshotEvent, TimelineEntry, VoiceCaptureSession } from '@daily-timeline/types';
 import { readConfig } from './config';
+import { corsOptions } from './cors-config';
 
 const config = readConfig(process.env);
 const server = Fastify({ logger: { level: config.LOG_LEVEL } });
 
-server.register(fastifyJwt, {
-  secret: config.JWT_SECRET
-});
+const corsAllowedOrigins = z
+  .string()
+  .trim()
+  .min(1)
+  .transform((value) => value.split(',').map((origin) => origin.trim()))
+  .pipe(z.array(z.string().url()).min(1))
+  .catch(['http://localhost:5173'])
+  .parse(process.env.CORS_ALLOWED_ORIGINS);
 
-server.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
-  try {
-    await request.jwtVerify();
-  } catch (err: unknown) {
-    return reply.send(err);
-  }
+server.register(cors, {
+  ...corsOptions,
+  origin: corsAllowedOrigins
 });
 
 const timelineEntries: TimelineEntry[] = [];

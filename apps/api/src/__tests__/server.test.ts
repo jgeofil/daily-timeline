@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import Fastify, { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import fastifyJwt from '@fastify/jwt';
+import Fastify, { FastifyInstance } from 'fastify';
+import cors from '@fastify/cors';
 import type { Insight, ScreenshotEvent, TimelineEntry, VoiceCaptureSession } from '@daily-timeline/types';
+import { corsOptions } from '../cors-config';
 
 const JWT_SECRET = process.env.JWT_SECRET ?? 'jwt-test-placeholder-16ch';
 
@@ -10,19 +11,12 @@ const JWT_SECRET = process.env.JWT_SECRET ?? 'jwt-test-placeholder-16ch';
  * module-level side effects (readConfig(process.env) and server.listen()).
  * This mirrors exactly the routes defined in apps/api/src/server.ts.
  */
-async function buildApp(): Promise<FastifyInstance> {
+function buildApp(allowedOrigins: string[] = ['http://localhost:5173']): FastifyInstance {
   const app = Fastify({ logger: false });
 
-  await app.register(fastifyJwt, {
-    secret: JWT_SECRET
-  });
-
-  app.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
-    try {
-      await request.jwtVerify();
-    } catch (err: unknown) {
-      return reply.send(err);
-    }
+  app.register(cors, {
+    ...corsOptions,
+    origin: allowedOrigins
   });
 
   const timelineEntries: TimelineEntry[] = [];
@@ -257,6 +251,150 @@ describe('API server routes', () => {
         const response = await app.inject({ method: 'GET', url: endpoint });
         expect(response.statusCode).toBe(401);
       }
+    });
+  });
+
+  describe('CORS configuration', () => {
+    it('returns Access-Control-Allow-Origin header for allowed origin', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/health',
+        headers: {
+          origin: 'http://localhost:5173'
+        }
+      });
+
+      expect(response.headers['access-control-allow-origin']).toBe('http://localhost:5173');
+    });
+
+    it('does not return Access-Control-Allow-Origin header for disallowed origin', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/health',
+        headers: {
+          origin: 'http://malicious-site.com'
+        }
+      });
+
+      expect(response.headers['access-control-allow-origin']).toBeUndefined();
+    });
+
+    it('returns CORS headers for OPTIONS preflight request', async () => {
+      const response = await app.inject({
+        method: 'OPTIONS',
+        url: '/health',
+        headers: {
+          origin: 'http://localhost:5173',
+          'access-control-request-method': 'GET'
+        }
+      });
+
+      expect(response.statusCode).toBe(204);
+      expect(response.headers['access-control-allow-origin']).toBe('http://localhost:5173');
+      expect(response.headers['access-control-allow-methods']).toContain('GET');
+    });
+
+    it('includes POST in the Access-Control-Allow-Methods header', async () => {
+      const response = await app.inject({
+        method: 'OPTIONS',
+        url: '/health',
+        headers: {
+          origin: 'http://localhost:5173',
+          'access-control-request-method': 'POST'
+        }
+      });
+
+      expect(response.headers['access-control-allow-methods']).toContain('POST');
+    });
+
+    it('includes DELETE in the Access-Control-Allow-Methods header', async () => {
+      const response = await app.inject({
+        method: 'OPTIONS',
+        url: '/health',
+        headers: {
+          origin: 'http://localhost:5173',
+          'access-control-request-method': 'DELETE'
+        }
+      });
+
+      expect(response.headers['access-control-allow-methods']).toContain('DELETE');
+    });
+
+    it('includes Content-Type in Access-Control-Allow-Headers', async () => {
+      const response = await app.inject({
+        method: 'OPTIONS',
+        url: '/health',
+        headers: {
+          origin: 'http://localhost:5173',
+          'access-control-request-method': 'GET',
+          'access-control-request-headers': 'Content-Type'
+        }
+      });
+
+      expect(response.headers['access-control-allow-headers']).toContain('Content-Type');
+    });
+
+    it('includes Authorization in Access-Control-Allow-Headers', async () => {
+      const response = await app.inject({
+        method: 'OPTIONS',
+        url: '/health',
+        headers: {
+          origin: 'http://localhost:5173',
+          'access-control-request-method': 'GET',
+          'access-control-request-headers': 'Authorization'
+        }
+      });
+
+      expect(response.headers['access-control-allow-headers']).toContain('Authorization');
+    });
+
+    it('does not set CORS headers when no Origin header is sent', async () => {
+      const response = await app.inject({ method: 'GET', url: '/health' });
+
+      expect(response.headers['access-control-allow-origin']).toBeUndefined();
+    });
+  });
+
+  describe('CORS with multiple allowed origins', () => {
+    let multiOriginApp: FastifyInstance;
+
+    beforeEach(async () => {
+      multiOriginApp = buildApp(['http://localhost:5173', 'https://app.example.com']);
+      await multiOriginApp.ready();
+    });
+
+    afterEach(async () => {
+      await multiOriginApp.close();
+    });
+
+    it('allows the first origin in the list', async () => {
+      const response = await multiOriginApp.inject({
+        method: 'GET',
+        url: '/health',
+        headers: { origin: 'http://localhost:5173' }
+      });
+
+      expect(response.headers['access-control-allow-origin']).toBe('http://localhost:5173');
+    });
+
+    it('allows the second origin in the list', async () => {
+      const response = await multiOriginApp.inject({
+        method: 'GET',
+        url: '/health',
+        headers: { origin: 'https://app.example.com' }
+      });
+
+      expect(response.headers['access-control-allow-origin']).toBe('https://app.example.com');
+    });
+
+    it('blocks an origin not in the list', async () => {
+      const response = await multiOriginApp.inject({
+        method: 'GET',
+        url: '/health',
+        headers: { origin: 'http://evil.com' }
+      });
+
+      expect(response.headers['access-control-allow-origin']).toBeUndefined();
     });
   });
 });

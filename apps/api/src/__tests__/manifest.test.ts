@@ -43,4 +43,32 @@ describe('apps/api package.json manifest', () => {
       expect(pkg.dependencies).toHaveProperty('zod');
     });
   });
+
+  describe('@fastify/cors dependency (added in this PR)', () => {
+    it('@fastify/cors is present in dependencies', () => {
+      expect(pkg.dependencies).toHaveProperty('@fastify/cors');
+    });
+
+    it('@fastify/cors version is a valid semver range', () => {
+      const version = pkg.dependencies['@fastify/cors'];
+      expect(version).toMatch(/^[\^~]?\d+\.\d+\.\d+/);
+    });
+
+    it('@fastify/cors is at version ^10.x or higher', () => {
+      const version = pkg.dependencies['@fastify/cors'];
+      expect(version).toMatch(/^\^(?:10|1[1-9]|\d{3})\./);
+    });
+  });
+
+  describe('@fastify/jwt dependency (removed in this PR)', () => {
+    it('@fastify/jwt is NOT present in dependencies', () => {
+      expect(pkg.dependencies).not.toHaveProperty('@fastify/jwt');
+    });
+
+    it('no JWT-related fastify plugin is a direct dependency', () => {
+      const depKeys = Object.keys(pkg.dependencies ?? {});
+      const jwtDeps = depKeys.filter((k) => k.includes('jwt'));
+      expect(jwtDeps).toHaveLength(0);
+    });
+  });
 });
