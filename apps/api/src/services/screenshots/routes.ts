@@ -11,9 +11,9 @@ interface ScreenshotRoutesOptions {
 }
 
 export function registerScreenshotRoutes(server: FastifyInstance, options: ScreenshotRoutesOptions): void {
-  server.get('/screenshots/events', async () => ({ data: options.storage.list() }));
+  server.get('/screenshots/events', { preHandler: [server.authenticate] }, async () => ({ data: options.storage.list() }));
 
-  server.post('/screenshots/events', async (request, reply) => {
+  server.post('/screenshots/events', { preHandler: [server.authenticate] }, async (request, reply) => {
     const parsed = ScreenshotIngestionSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.status(400).send({ error: 'Invalid screenshot event payload', details: parsed.error.issues });

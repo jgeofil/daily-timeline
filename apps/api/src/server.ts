@@ -4,6 +4,8 @@ import { z } from 'zod';
 import type { Insight, ScreenshotEvent, TimelineEntry, VoiceCaptureSession } from '@daily-timeline/types';
 import { readConfig } from './config';
 import { corsOptions } from './cors-config';
+import { registerScreenshotRoutes } from './services/screenshots/routes';
+import { InMemoryScreenshotStorage } from './services/screenshots/storage';
 
 const config = readConfig(process.env);
 const server = Fastify({ logger: { level: config.LOG_LEVEL } });
@@ -29,10 +31,10 @@ const screenshotStorage = new InMemoryScreenshotStorage();
 
 server.get('/health', async () => ({ ok: true, service: 'daily-timeline-api' }));
 
-server.get('/timeline/entries', async () => ({ data: timelineEntries }));
-server.get('/voice/sessions', async () => ({ data: voiceSessions }));
+server.get('/timeline/entries', { preHandler: [server.authenticate] }, async () => ({ data: timelineEntries }));
+server.get('/voice/sessions', { preHandler: [server.authenticate] }, async () => ({ data: voiceSessions }));
 registerScreenshotRoutes(server, { storage: screenshotStorage, timelineEntries, insights });
-server.get('/insights', async () => ({ data: insights }));
+server.get('/insights', { preHandler: [server.authenticate] }, async () => ({ data: insights }));
 
 server.listen({ port: config.PORT, host: '0.0.0.0' }).catch((error: Error) => {
   server.log.error(error);
