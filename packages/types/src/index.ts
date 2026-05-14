@@ -21,13 +21,16 @@ export interface VoiceCaptureSession {
 
 export interface ScreenshotEvent {
   id: string;
-  timelineEntryId: string;
+  imageUrl: string;
   capturedAt: string;
-  url: string;
-  width: number;
-  height: number;
-  appContext: string | null;
-  extractedText: string | null;
+  createdAt: string;
+  windowTitle: string | null;
+  inferredTask: string | null;
+  ocrText: string | null;
+  entities: string[];
+  taskClues: string[];
+  anomalies: string[];
+  linkedTimelineEntryIds: string[];
 }
 
 export interface Insight {

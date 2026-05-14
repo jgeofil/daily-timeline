@@ -11,11 +11,13 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - name: Setup Bun
-        # You may pin to the exact commit or the version.
-        # uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
         uses: oven-sh/setup-bun@v2.2.0
       - name: install
         run: |
@@ -24,7 +26,15 @@ jobs:
       - name: build
         run: |
           bun run --filter "*" build
+      - name: ESLint Plus
+        uses: bradennapier/eslint-plus-action@v3
+        with:
+          # GitHub repository token for publishing inline lint annotations. Should be secrets.GITHUB_TOKEN.
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          
       - name: test
         run: |
-          bun run -r test
-              
+          npm run test --workspaces --if-present
+      - name: typecheck
+        run: |
+          npm run typecheck --workspaces --if-present
