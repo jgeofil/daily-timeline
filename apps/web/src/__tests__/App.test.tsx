@@ -4,6 +4,16 @@ import { App } from '../App';
 import { emitScreenshotEvent } from '../lib/screenshotBridge';
 import type { ScreenshotEvent } from '@daily-timeline/types';
 
+const getPreContents = (container: HTMLElement) =>
+  Array.from(container.querySelectorAll('pre')).map((p) => p.textContent ?? '');
+
+describe('App component', () => {
+  describe('page structure', () => {
+    it('renders a main element with class "app-shell"', () => {
+      const { container } = render(<App />);
+      const main = container.querySelector('main.app-shell');
+      expect(main).toBeInTheDocument();
+    });
 // Stub fetch globally so the polling effect doesn't throw in jsdom
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('no network in tests')));
@@ -19,6 +29,44 @@ describe('App component', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Possible missed detail cards' })).toBeInTheDocument();
   });
 
+  describe('TimelineEntry section', () => {
+    it('renders a "TimelineEntry" section heading', () => {
+      render(<App />);
+      expect(screen.getByRole('heading', { level: 2, name: 'TimelineEntry' })).toBeInTheDocument();
+    });
+
+    it('renders a <pre> element with TimelineEntry JSON', () => {
+      const { container } = render(<App />);
+      const sections = container.querySelectorAll('section');
+      const timelineSection = sections[0];
+      expect(timelineSection).toBeDefined();
+      const pre = timelineSection!.querySelector('pre');
+      expect(pre).toBeInTheDocument();
+    });
+
+    it('TimelineEntry JSON includes expected id', () => {
+      const { container } = render(<App />);
+      const preContents = getPreContents(container);
+      expect(preContents.some((text) => text.includes('"id": "entry-1"'))).toBe(true);
+    });
+
+    it('TimelineEntry JSON includes source "voice"', () => {
+      const { container } = render(<App />);
+      const preContents = getPreContents(container);
+      expect(preContents.some((text) => text.includes('"source": "voice"'))).toBe(true);
+    });
+
+    it('TimelineEntry JSON includes tags', () => {
+      const { container } = render(<App />);
+      const preContents = getPreContents(container);
+      expect(preContents.some((text) => text.includes('architecture') && text.includes('planning'))).toBe(true);
+    });
+
+    it('TimelineEntry JSON includes userId', () => {
+      const { container } = render(<App />);
+      const preContents = getPreContents(container);
+      expect(preContents.some((text) => text.includes('"userId": "user-1"'))).toBe(true);
+    });
   it('shows empty missed-detail placeholder by default', () => {
     render(<App />);
     expect(screen.getByText('No contradictions found yet.')).toBeInTheDocument();
@@ -49,6 +97,24 @@ describe('App component', () => {
     expect(preContents.some((text) => text.trim() === 'null')).toBe(true);
   });
 
+    it('VoiceCaptureSession JSON includes id and state', () => {
+      const { container } = render(<App />);
+      const preContents = getPreContents(container);
+      expect(preContents.some((text) => text.includes('"id": "voice-session-1"'))).toBe(true);
+      expect(preContents.some((text) => text.includes('"state": "capturing"'))).toBe(true);
+    });
+
+    it('VoiceCaptureSession JSON includes null endedAt', () => {
+      const { container } = render(<App />);
+      const preContents = getPreContents(container);
+      expect(preContents.some((text) => text.includes('"endedAt": null'))).toBe(true);
+    });
+
+    it('VoiceCaptureSession JSON includes language "en-US"', () => {
+      const { container } = render(<App />);
+      const preContents = getPreContents(container);
+      expect(preContents.some((text) => text.includes('"language": "en-US"'))).toBe(true);
+    });
   it('renders exactly 5 sections', () => {
     const { container } = render(<App />);
     const sections = container.querySelectorAll('section');
@@ -113,6 +179,32 @@ describe('App component', () => {
     expect(screen.getByText('Expanded context linked to entries: entry-1')).toBeInTheDocument();
   });
 
+    it('Insight JSON includes type "pattern" and confidence', () => {
+      const { container } = render(<App />);
+      const preContents = getPreContents(container);
+      expect(preContents.some((text) => text.includes('"type": "pattern"'))).toBe(true);
+      expect(preContents.some((text) => text.includes('"confidence": 0.91'))).toBe(true);
+    });
+
+    it('Insight JSON includes summary text', () => {
+      const { container } = render(<App />);
+      const preContents = getPreContents(container);
+      expect(
+        preContents.some((text) => text.includes('Planning work is concentrated in the first half of the day.'))
+      ).toBe(true);
+    });
+
+    it('DailyReviewSession JSON includes status "in_progress"', () => {
+      const { container } = render(<App />);
+      const preContents = getPreContents(container);
+      expect(preContents.some((text) => text.includes('"status": "in_progress"'))).toBe(true);
+    });
+
+    it('DailyReviewSession JSON includes null completedAt', () => {
+      const { container } = render(<App />);
+      const preContents = getPreContents(container);
+      expect(preContents.some((text) => text.includes('"completedAt": null'))).toBe(true);
+    });
   it('uses "Screenshot context" as card title when windowTitle is null', async () => {
     const noTitleEvent: ScreenshotEvent = {
       id: 'no-title-shot',
